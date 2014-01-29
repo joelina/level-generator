@@ -3,9 +3,12 @@
 #include <SDL/SDL_ttf.h>
 #include <math.h>
 #include <iostream>
+#include <ctime>
 
 SDL_Surface* screen;
 int cameraX, cameraY;
+SDL_Event event;
+bool running = true;
 /*
 int map[10][10] = {
 					{0,1,1,0,1,1,0,1,1,2},
@@ -20,17 +23,18 @@ int map[10][10] = {
 					{0,0,1,0,0,1,0,0,1,0}
 				};
 */
-int map[10][10];
+int map[40][40];
 
 void get_map()
 {
-	for(int x = 0; x < 10; x++)
+	void* mapPointer = malloc(sizeof(int));
+	for(int x = 0; x < 40; x++)
 	{
-		for(int y = 0; y < 10; y++)
+		for(int y = 0; y < 40; y++)
 		{
-			void* mapPointer = malloc(sizeof(int));
-			int* mapData = (int*)mapPointer;
-			map[y][x] = *mapData;
+			int* mapData = (int*)mapPointer+x+y;
+			map[y][x] = *mapData ^ (time(NULL)+x+y);
+			//free(mapPointer);
 		}
 	}
 	return;
@@ -77,14 +81,16 @@ void apply(int x, int y, SDL_Surface* source, SDL_Surface* dest, SDL_Rect* clip 
 void render_tiles()
 {
 	SDL_Surface* tile = NULL;
-	for(int x = 0; x < 10; x++)
+	for(int x = 0; x < 40; x++)
 	{
-		for(int y = 0; y < 10; y++)
+		for(int y = 0; y < 40; y++)
 		{
 			int heightOverlapping = (21)/2+1;
 			int yOffset = 40-21;
-				 if(map[y][x]%15 <= 2){tile = load_image("tile/sand.png");}
-			else if(map[y][x]%9 <= 2){tile = load_image("tile/rock.png" );}
+				 if(map[y][x]%2 == 0){tile = load_image("tile/sand.png");}
+			else if(map[y][x]%3 == 0){tile = load_image("tile/gravel.png" );}
+			else if(map[y][x]%4 == 0){tile = load_image("tile/ocean.png" );}
+			else if(map[y][x]%5 == 0){tile = load_image("tile/rock.png" );}
 			else 				   	 {tile = load_image("tile/grass.png");}
 			apply(x*40+(is_odd(y))*20, y*heightOverlapping-yOffset, tile, screen);
 		}
@@ -104,6 +110,18 @@ void run()
 {
 	get_map();
 	render_tiles();
+	while(running)
+	{
+		while(SDL_PollEvent(&event))
+		{
+			if(event.type == SDL_KEYDOWN)
+			{
+				if(event.key.keysym.sym == SDLK_q){get_map(); render_tiles();}
+				if(event.key.keysym.sym == SDLK_p){running = false;}
+			}
+		}
+		SDL_Flip(screen);
+	}
 	return;
 }
 
